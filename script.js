@@ -15,6 +15,7 @@ let startTime, reactionTime, highScore = null;
 let timeoutId;
 
 const restartBtn = document.getElementById('restartBtn');
+const shareBtn = document.getElementById('shareBtn'); // ✅ New button
 
 // Load fruit images
 fruits.forEach(name => {
@@ -61,6 +62,7 @@ function drawScore() {
   ctx.fillStyle = '#222';
   ctx.textAlign = 'center';
   ctx.fillText(`Reaction: ${reactionTime.toFixed(2)}s`, canvas.width / 2, canvas.height / 2 + 20);
+
   if (highScore !== null) {
     ctx.fillText(`High Score: ${highScore.toFixed(2)}s`, canvas.width / 2, canvas.height / 2 + 50);
   }
@@ -98,7 +100,6 @@ function startGame() {
   startTime = performance.now();
   gameLoop();
 
-  // End game if no action in 5.5s
   timeoutId = setTimeout(() => {
     if (!gameOver) {
       gameOver = true;
@@ -109,13 +110,15 @@ function startGame() {
       ctx.fillStyle = 'red';
       ctx.textAlign = 'center';
       ctx.fillText('Too Slow! Game Over', canvas.width / 2, canvas.height / 2 - 20);
+      drawFruits(); // keep the fruits
       drawScore();
+
       restartBtn.style.display = 'block';
+      shareBtn.style.display = 'inline-block'; // ✅ show WhatsApp button
     }
   }, 5000);
 }
 
-// Click / Tap
 ['click', 'touchstart'].forEach(eventType => {
   canvas.addEventListener(eventType, (e) => {
     if (!gameStarted || gameOver) return;
@@ -130,8 +133,8 @@ function startGame() {
     }
 
     const rect = canvas.getBoundingClientRect();
-    const mouseX = clientX - rect.left;
-    const mouseY = clientY - rect.top;
+    const mouseX = (clientX - rect.left) * (canvas.width / rect.width);
+    const mouseY = (clientY - rect.top) * (canvas.height / rect.height);
 
     for (let fruit of fallingFruits) {
       if (
@@ -141,7 +144,7 @@ function startGame() {
         mouseY <= fruit.y + fruit.height
       ) {
         if (fruit.name === targetFruit) {
-          clearTimeout(timeoutId); // Cancel "Too Slow!" trigger
+          clearTimeout(timeoutId);
           gameOver = true;
           const endTime = performance.now();
           reactionTime = (endTime - startTime) / 1000;
@@ -150,25 +153,24 @@ function startGame() {
             highScore = reactionTime;
           }
 
-          // ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.font = '24px Arial';
           ctx.fillStyle = 'green';
           ctx.textAlign = 'center';
           ctx.fillText('🎉 Correct! 🎯', canvas.width / 2, canvas.height / 2 - 20);
           drawScore();
+
           restartBtn.style.display = 'block';
+          shareBtn.style.display = 'inline-block'; // ✅ show WhatsApp button
         }
       }
     }
   });
 });
 
-// Start game after page load
 window.onload = () => {
   startCountdown();
 };
 
-// Restart button logic
 restartBtn.addEventListener('click', () => {
   countdown = 3;
   gameStarted = false;
@@ -176,6 +178,14 @@ restartBtn.addEventListener('click', () => {
   fallingFruits = [];
   reactionTime = 0;
   restartBtn.style.display = 'none';
+  shareBtn.style.display = 'none'; // ✅ hide share button again
   clearTimeout(timeoutId);
   startCountdown();
+});
+
+// ✅ WhatsApp Share button logic
+shareBtn.addEventListener('click', () => {
+  const message = `🎯 I scored ${reactionTime.toFixed(2)}s in Fruit Reflex! 🍉 Try it here: https://fruit-reflex.vercel.app`;
+  const encoded = encodeURIComponent(message);
+  window.open(`https://wa.me/?text=${encoded}`, '_blank');
 });
