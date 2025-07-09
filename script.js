@@ -1,8 +1,8 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-canvas.width = window.innerWidth * 0.9;
-canvas.height = window.innerHeight * 0.9;
+canvas.width = window.innerWidth * 0.95;
+canvas.height = window.innerHeight * 0.95;
 
 const fruits = ['apple', 'banana', 'mango', 'pineapple', 'watermelon'];
 const fruitImages = {};
@@ -92,8 +92,12 @@ function startGame() {
   gameStarted = true;
   targetFruit = fruits[Math.floor(Math.random() * fruits.length)];
 
-  const positions = [20, 100, 180, 260, 340];
-  fallingFruits = fruits.map((fruit, i) => createFruit(fruit, positions[i]));
+const spacing = canvas.width / (fruits.length + 1); // spacing between fruits
+fallingFruits = fruits.map((fruit, i) => {
+  const x = spacing * (i + 1) - 30; // center each fruit, subtract half width
+  return createFruit(fruit, x);
+});
+
 
   startTime = performance.now();
   gameLoop();
