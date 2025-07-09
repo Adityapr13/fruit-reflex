@@ -4,8 +4,6 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth * 0.9;
 canvas.height = window.innerHeight * 0.9;
 
-
-// Fruit options
 const fruits = ['apple', 'banana', 'mango', 'pineapple', 'watermelon'];
 const fruitImages = {};
 let fallingFruits = [];
@@ -14,9 +12,9 @@ let countdown = 3;
 let gameStarted = false;
 let gameOver = false;
 let startTime, reactionTime, highScore = null;
+let timeoutId;
 
 const restartBtn = document.getElementById('restartBtn');
-
 
 // Load fruit images
 fruits.forEach(name => {
@@ -25,7 +23,6 @@ fruits.forEach(name => {
   fruitImages[name] = img;
 });
 
-// Fruit object constructor
 function createFruit(name, x) {
   return {
     name,
@@ -48,6 +45,7 @@ function drawCountdown() {
 function drawTargetText() {
   ctx.font = '24px Arial';
   ctx.fillStyle = '#444';
+  ctx.textAlign = 'center';
   ctx.fillText(`Tap on: ${targetFruit.toUpperCase()}`, canvas.width / 2, 40);
 }
 
@@ -61,39 +59,28 @@ function drawFruits() {
 function drawScore() {
   ctx.font = '20px Arial';
   ctx.fillStyle = '#222';
-  ctx.fillText(`Reaction: ${reactionTime.toFixed(2)}s`, canvas.width / 2, canvas.height / 2 + 60);
+  ctx.textAlign = 'center';
+  ctx.fillText(`Reaction: ${reactionTime.toFixed(2)}s`, canvas.width / 2, canvas.height / 2 + 20);
   if (highScore !== null) {
-    ctx.fillText(`High Score: ${highScore.toFixed(2)}s`, canvas.width / 2, canvas.height / 2 + 90);
+    ctx.fillText(`High Score: ${highScore.toFixed(2)}s`, canvas.width / 2, canvas.height / 2 + 50);
   }
 }
 
-// Game loop
 function gameLoop() {
-  if (!gameStarted) return;
+  if (!gameStarted || gameOver) return;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawTargetText();
   drawFruits();
 
-  if (!gameOver) {
-    requestAnimationFrame(gameLoop);
-  } else {
-ctx.font = '24px Arial';
-ctx.fillStyle = 'red';
-ctx.textAlign = 'center';
-ctx.fillText('Too Slow! Game Over', canvas.width / 2, canvas.height / 2 + 30);
-drawScore();
-  }
+  requestAnimationFrame(gameLoop);
 }
 
-// Countdown before game starts
 function startCountdown() {
   drawCountdown();
-
   const interval = setInterval(() => {
     countdown--;
     drawCountdown();
-
     if (countdown < 0) {
       clearInterval(interval);
       startGame();
@@ -101,7 +88,6 @@ function startCountdown() {
   }, 1000);
 }
 
-// Start game logic
 function startGame() {
   gameStarted = true;
   targetFruit = fruits[Math.floor(Math.random() * fruits.length)];
@@ -112,25 +98,29 @@ function startGame() {
   startTime = performance.now();
   gameLoop();
 
-  // Auto-end game if no tap after 6 seconds
-setTimeout(() => {
-  if (!gameOver) {
-    gameOver = true;
-    reactionTime = (performance.now() - startTime) / 1000;
-    drawScore();
-    restartBtn.style.display = 'block';
-  }
-},4500);
+  // End game if no action in 5.5s
+  timeoutId = setTimeout(() => {
+    if (!gameOver) {
+      gameOver = true;
+      reactionTime = (performance.now() - startTime) / 1000;
 
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.font = '24px Arial';
+      ctx.fillStyle = 'red';
+      ctx.textAlign = 'center';
+      ctx.fillText('Too Slow! Game Over', canvas.width / 2, canvas.height / 2 - 20);
+      drawScore();
+      restartBtn.style.display = 'block';
+    }
+  }, 5000);
 }
 
-// Handle click/tap
+// Click / Tap
 ['click', 'touchstart'].forEach(eventType => {
   canvas.addEventListener(eventType, (e) => {
     if (!gameStarted || gameOver) return;
 
     let clientX, clientY;
-
     if (e.touches && e.touches.length > 0) {
       clientX = e.touches[0].clientX;
       clientY = e.touches[0].clientY;
@@ -151,6 +141,7 @@ setTimeout(() => {
         mouseY <= fruit.y + fruit.height
       ) {
         if (fruit.name === targetFruit) {
+          clearTimeout(timeoutId); // Cancel "Too Slow!" trigger
           gameOver = true;
           const endTime = performance.now();
           reactionTime = (endTime - startTime) / 1000;
@@ -159,6 +150,11 @@ setTimeout(() => {
             highScore = reactionTime;
           }
 
+          // ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.font = '24px Arial';
+          ctx.fillStyle = 'green';
+          ctx.textAlign = 'center';
+          ctx.fillText('🎉 Correct! 🎯', canvas.width / 2, canvas.height / 2 - 20);
           drawScore();
           restartBtn.style.display = 'block';
         }
@@ -167,21 +163,19 @@ setTimeout(() => {
   });
 });
 
-
-// Start the game after loading images
+// Start game after page load
 window.onload = () => {
   startCountdown();
 };
-// Play Again button logic
+
+// Restart button logic
 restartBtn.addEventListener('click', () => {
-  // Reset all game state
   countdown = 3;
   gameStarted = false;
   gameOver = false;
   fallingFruits = [];
   reactionTime = 0;
   restartBtn.style.display = 'none';
-
-  startCountdown(); // Restart the game loop with countdown
+  clearTimeout(timeoutId);
+  startCountdown();
 });
-
