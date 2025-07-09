@@ -157,8 +157,6 @@ function startGame() {
           ctx.fillText('🎉 Correct! 🎯', canvas.width / 2, canvas.height / 2 - 20);
           drawScore();
           restartBtn.style.display = 'block';
-          document.getElementById('shareBtn').style.display = 'block';
-
         }
       }
     }
@@ -180,22 +178,4 @@ restartBtn.addEventListener('click', () => {
   restartBtn.style.display = 'none';
   clearTimeout(timeoutId);
   startCountdown();
-});
-const shareBtn = document.getElementById('shareBtn');
-
-shareBtn.addEventListener('click', async () => {
-  if (navigator.share) {
-    try {
-      await navigator.share({
-        title: 'Fruit Reflex Game 🍉',
-        text: `I scored ${reactionTime.toFixed(2)}s in Fruit Reflex! Can you beat me?`,
-        url: 'https://fruit-reflex.vercel.app',
-      });
-      console.log('Shared successfully');
-    } catch (err) {
-      console.error('Sharing failed:', err);
-    }
-  } else {
-    alert('Sharing not supported on this device.');
-  }
 });
